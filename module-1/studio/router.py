@@ -1,7 +1,9 @@
-from langchain_openai import ChatOpenAI
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, START, END
+import os
+
+from langchain.chat_models import init_chat_model
+from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
+
 
 # Tool
 def multiply(a: int, b: int) -> int:
@@ -13,13 +15,24 @@ def multiply(a: int, b: int) -> int:
     """
     return a * b
 
+
+OPENROUTER_API_URL = os.getenv("OPENROUTER_API_URL")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
 # LLM with bound tool
-llm = ChatOpenAI(model="gpt-4o")
+llm = init_chat_model(
+    "openai:deepseek/deepseek-v4-flash-0731",
+    temperature=0,
+    openai_api_key=OPENROUTER_API_KEY,
+    openai_api_base=OPENROUTER_API_URL,
+)
 llm_with_tools = llm.bind_tools([multiply])
+
 
 # Node
 def tool_calling_llm(state: MessagesState):
     return {"messages": [llm_with_tools.invoke(state["messages"])]}
+
 
 # Build graph
 builder = StateGraph(MessagesState)
